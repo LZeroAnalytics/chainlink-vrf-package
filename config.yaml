@@ -1,0 +1,15 @@
+network:
+  type: "ethereum"
+  rpc: http://host.docker.internal:49741
+  ws: ws://host.docker.internal:49742
+  chain_id: "3151908"
+  private_key: "78ea40bcc78c5ad26a1c4e721f17308ab151960f34f9a085c9ac141d38ebe4ac"
+  faucet: "http://host.docker.internal:49853"
+
+vrf:
+  link_token_address: "0x514910771AF9Ca656af840dff83E8264EcF986CA"
+  link_native_token_feed_address: "0xdc530d9457755926550b59e8eccdae7624181557"
+  vrf_type: "vrfv2plus"
+  mpc_vrf_settings:
+    faulty_oracles: 1
+    nodes_number: 6
