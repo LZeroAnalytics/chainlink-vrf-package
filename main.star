@@ -7,7 +7,10 @@ ocr2vrf_cli = import_module("./src/ocr2vrf/ocr2vrf.star")
 def run(plan, args = {}):
     config = input_parser.input_parser(plan, args)
 
-    result = setup_mpc_vrf_network(plan, config)
+    if config.chainlink.vrf_type == constants.VRF_TYPE.MPC:
+        result = setup_mpc_vrf_network(plan, config)
+    else:
+        result = setup_simple_vrfv2plus_network(plan, config)
     
     return struct(
         contracts_addresses = result.contracts_addresses,
@@ -195,4 +198,124 @@ def setup_chainlink_node_for_ocr2vrf(plan, node_name, faucet_url):
         dkg_sign_key = dkg_sign_key,
         ocr_key_bundle_id = ocr_key_bundle_id,
         ocr_keys = ocr_keys
+    )
+
+# ---------------------------VRFv2Plus--------------------------------
+
+def setup_simple_vrfv2plus_network(plan, config):
+    nodes_names = ["vrf", "bhs", "bhf"]
+    chainlink_node_configs = []
+    for name in nodes_names:
+        chainlink_node_configs.append(
+            {"node_name": "chainlink-node-vrfv2plus-" + name, "image_version": "2.23.0"}
+        )
+
+    # Use the chainlink package with proper configuration
+    all_nodes = chainlink_pkg.run(plan, args = { 
+        "network": {
+            "rpc": config.network.rpc,
+            "ws": config.network.ws,
+            "chain_id": config.network.chain_id
+        }, 
+        "chainlink_nodes": chainlink_node_configs 
+    })
+    
+    vrf_key = chainlink_pkg.create_vrf_keys(plan, "chainlink-node-vrfv2plus-vrf")
+    
+    sending_keys = []
+    for name in nodes_names:
+        sending_keys.append(chainlink_pkg.get_eth_key(plan, "chainlink-node-vrfv2plus-" + name))
+
+    contracts_addresses = deploy_vrfv2plus_contracts(
+        plan,
+        config.network.private_key,
+        config.network.rpc,
+        config.chainlink.link_token_address,
+        config.chainlink.link_native_token_feed_address,
+        vrf_key.uncompressed,
+        config.network.type,
+        config.network.chain_id
+    )
+
+    spin_up_vrfv2plus_jobs_on_nodes(plan, contracts_addresses, vrf_key.compressed, sending_keys, config.network.chain_id)
+    
+    return struct(
+        contracts_addresses = struct(
+            coordinator = contracts_addresses.coordinator,
+            batchCoordinator = contracts_addresses.batchCoordinator,
+            blockHashStore = contracts_addresses.blockHashStore,
+            batchBlockHashStore = contracts_addresses.batchBlockHashStore,
+            linkToken = contracts_addresses.linkToken,
+            linkEthFeed = contracts_addresses.linkEthFeed,
+        ),
+        chainlink_nodes = all_nodes
+    )
+
+def deploy_vrfv2plus_contracts(plan, private_key, rpc_url, link_token_address, link_native_token_feed_address, uncompressed_vrf_key, network_type, chain_id):
+    """Deploy contracts using Hardhat"""
+    hardhat = hardhat_pkg.run(
+        plan, 
+        "github.com/LZeroAnalytics/hardhat-vrf-contracts",
+        env_vars = {
+            "RPC_URL": rpc_url,
+            "PRIVATE_KEY": private_key,
+            "LINK_TOKEN_ADDRESS": link_token_address,
+            "LINK_NATIVE_TOKEN_FEED_ADDRESS": link_native_token_feed_address,
+            "UNCOMPRESSED_VRF_KEY": uncompressed_vrf_key,
+            "NETWORK_TYPE": network_type,
+            "CHAIN_ID": chain_id
+        }
+    )
+
+    hardhat_pkg.compile(plan)
+    
+    # Deploy coordinator and get addresses
+    result = hardhat_pkg.script(
+        plan = plan,
+        script = "scripts/vrfv2plus/deploy-setup-contracts.ts",
+        network = "bloctopus",
+        return_keys = {"blockHashStore": "contracts.blockHashStore", "batchBlockHashStore": "contracts.batchBlockHashStore", "coordinator": "contracts.coordinator", "batchCoordinator": "contracts.batchCoordinator", "linkToken": "contracts.linkToken", "linkEthFeed": "contracts.linkEthFeed", "testConsumer": "contracts.testConsumer", "subscriptionId": "subscription.id"},
+        extraCmds = " | grep -A 100 DEPLOYMENT_JSON_BEGIN | grep -B 100 DEPLOYMENT_JSON_END | sed '/DEPLOYMENT_JSON_BEGIN/d' | sed '/DEPLOYMENT_JSON_END/d'"
+    )
+
+    return struct(
+        blockHashStore = result["extract.blockHashStore"],
+        batchBlockHashStore = result["extract.batchBlockHashStore"],
+        coordinator = result["extract.coordinator"],
+        batchCoordinator = result["extract.batchCoordinator"],
+        linkToken = result["extract.linkToken"],
+        linkEthFeed = result["extract.linkEthFeed"],
+        testConsumer = result["extract.testConsumer"],
+        subscriptionId = result["extract.subscriptionId"]
+    )
+
+def spin_up_vrfv2plus_jobs_on_nodes(plan, contracts_addresses, compressed_vrf_key, sending_keys, chain_id):
+    chainlink_pkg.vrfv2plus.create_vrfv2plus_job(
+        plan,
+        contracts_addresses.coordinator,
+        contracts_addresses.batchCoordinator,
+        compressed_vrf_key,
+        chain_id,
+        sending_keys[0],
+        "chainlink-node-vrfv2plus-vrf"
+    )
+
+    chainlink_pkg.vrfv2plus.create_bhs_job(
+        plan,
+        contracts_addresses.coordinator,
+        contracts_addresses.blockHashStore,
+        contracts_addresses.batchBlockHashStore,
+        sending_keys[1],
+        chain_id,
+        "chainlink-node-vrfv2plus-bhs"
+    )
+
+    chainlink_pkg.vrfv2plus.create_bhf_job(
+        plan,
+        contracts_addresses.coordinator,
+        contracts_addresses.blockHashStore,
+        contracts_addresses.batchBlockHashStore,
+        sending_keys[2],
+        chain_id,
+        "chainlink-node-vrfv2plus-bhf"
     )
