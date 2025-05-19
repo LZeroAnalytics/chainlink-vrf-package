@@ -1,1 +1,24 @@
-name: "github.com/LZeroAnalytics/vrf-package"
+name: "github.com/LZeroAnalytics/chainlink-vrf-package"
+description: |
+  Chainlink VRF
+  ============
+  This Kurtosis package instantiates a Chainlink Verifiable Random Function (VRF) environment. It includes OCR2VRF coordinators and operators for providing verifiable randomness to smart contracts.
+
+  Prerequisites
+  -------------
+  - Access to an EVM-compatible blockchain with RPC endpoints
+  - Deployed Chainlink VRF contracts on the target blockchain
+  - Node operator credentials with funded ETH accounts
+
+  Configuration
+  -------------
+  To configure this package, you'll need to provide the following information:
+  - `rpc_url`: The RPC URL for the blockchain to connect to
+  - `chain_id`: The chain ID of the blockchain network
+  - `vrf_coordinator_address`: The address of the deployed VRF Coordinator contract
+  - `link_token_address`: The address of the LINK token contract
+  - `node_operator_keys`: Array of private keys for VRF node operators
+  - `subscription_id`: The VRF subscription ID for funding randomness requests
+  - `key_hash`: The public key hash for the VRF service
+  - `confirmation_blocks`: Number of blocks to wait for confirmation
+  - `max_gas_limit`: Maximum gas limit for VRF fulfillment transactions
