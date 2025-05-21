@@ -174,7 +174,7 @@ def fund_eth_key(plan, eth_key, faucet_url):
     result = plan.run_sh(
         name = "fund-link-node-eth-wallet",
         image = "curlimages/curl:latest",
-        run = "curl -X POST " + faucet_url + "/fund -H 'Content-Type: application/json' -d '{\"address\":\"" + eth_key + "\",\"amount\":0.1}'"
+        run = "curl -X POST " + faucet_url + "/fund -H 'Content-Type: application/json' -d '{\"address\":\"" + eth_key + "\",\"amount\":1}'"
     )
     
     # No need to create/remove services
@@ -224,7 +224,9 @@ def setup_simple_vrfv2plus_network(plan, config):
     
     sending_keys = []
     for name in nodes_names:
-        sending_keys.append(chainlink_pkg.get_eth_key(plan, "chainlink-node-vrfv2plus-" + name))
+        eth_key = chainlink_pkg.get_eth_key(plan, "chainlink-node-vrfv2plus-" + name)
+        fund_eth_key(plan, eth_key, config.network.faucet)
+        sending_keys.append(eth_key)
 
     contracts_addresses = deploy_vrfv2plus_contracts(
         plan,
@@ -237,6 +239,7 @@ def setup_simple_vrfv2plus_network(plan, config):
         config.network.chain_id
     )
 
+    
     spin_up_vrfv2plus_jobs_on_nodes(plan, contracts_addresses, vrf_key.compressed, sending_keys, config.network.chain_id)
     
     return struct(
