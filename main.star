@@ -24,7 +24,7 @@ def setup_mpc_vrf_network(plan, config):
     for i in range(config.chainlink.mpc_vrf_settings.nodes_number):
         chainlink_node_configs.append(struct(
             node_name = "chainlink-node-mpc-vrf-" + str(i),
-            image_version = "2.14.0"
+            image = "smartcontract/chainlink:2.14.0"
         ))
     
     # Pass the chainlink nodes configuration to the chainlink package
@@ -207,7 +207,7 @@ def setup_simple_vrfv2plus_network(plan, config):
     chainlink_node_configs = []
     for name in nodes_names:
         chainlink_node_configs.append(
-            {"node_name": "chainlink-node-vrfv2plus-" + name, "image_version": "2.23.0"}
+            {"node_name": "chainlink-node-vrfv2plus-" + name, "image": constants.DEFAULT_CHAINLINK_IMAGE}
         )
 
     # Use the chainlink package with proper configuration
