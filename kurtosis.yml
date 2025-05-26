@@ -7,18 +7,18 @@ description: |
   Prerequisites
   -------------
   - Access to an EVM-compatible blockchain with RPC endpoints
-  - Deployed Chainlink VRF contracts on the target blockchain
-  - Node operator credentials with funded ETH accounts
+  - A funded wallet in that network
 
   Configuration
   -------------
   To configure this package, you'll need to provide the following information:
-  - `rpc_url`: The RPC URL for the blockchain to connect to
-  - `chain_id`: The chain ID of the blockchain network
-  - `vrf_coordinator_address`: The address of the deployed VRF Coordinator contract
-  - `link_token_address`: The address of the LINK token contract
-  - `node_operator_keys`: Array of private keys for VRF node operators
-  - `subscription_id`: The VRF subscription ID for funding randomness requests
-  - `key_hash`: The public key hash for the VRF service
-  - `confirmation_blocks`: Number of blocks to wait for confirmation
-  - `max_gas_limit`: Maximum gas limit for VRF fulfillment transactions
+  - network
+    - `rpc`: The RPC URL for the blockchain to connect to
+    - `ws`: The WebSocket URL for the blockchain to connect to
+    - `chain_id`: The chain ID of the blockchain network
+    - `private_key`: The private key of the wallet to fund the VRF node operators
+    - `faucet`: The URL of the faucet to fund the VRF node operators
+
+  - vrf
+    - `link_token_address`: The address of the LINK token contract on your netowrk (can provide empty string if want to create new by this package)
+    - `lin_native_toeken_feed_address`: The address of the native token of your network with LINK (i.e. ETH/LINK) (can provide empty string if want to create new by this package)
