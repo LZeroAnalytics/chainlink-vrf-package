@@ -207,7 +207,7 @@ def setup_simple_vrfv2plus_network(plan, config):
     chainlink_node_configs = []
     for name in nodes_names:
         chainlink_node_configs.append(
-            {"node_name": "chainlink-node-vrfv2plus-" + name, "image": "fravlaca/chainlink:0.1.0"}
+            {"node_name": "chainlink-node-vrfv2plus-" + name, "image": "fravlaca/chainlink:0.1.1"}
         )
 
     # Use the chainlink package with proper configuration
