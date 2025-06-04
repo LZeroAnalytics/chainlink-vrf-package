@@ -59,7 +59,7 @@ def setup_mpc_vrf_network(plan, config):
 
     setup_mpc_vrf_contracts(plan, vrf_nodes_setups, contracts_addresses.dkg, contracts_addresses.vrf_beacon, config.chainlink.mpc_vrf_settings.faulty_oracles, config.network)
 
-    chainlink_pkg.create_bootstrap_job(
+    chainlink_pkg.node_utils.create_bootstrap_job(
         plan,
         contracts_addresses.dkg,
         config.network.chain_id,
@@ -133,7 +133,7 @@ def deploy_mpc_vrf_contracts(plan, private_key, rpc_url, link_token_address, lin
         plan = plan,
         script = "scripts/ocr2vrf/deploy-setup-contracts.ts",
         network = "bloctopus",
-        return_keys = ["vrfCoordinatorMPC", "dkg", "vrfBeacon"]
+        return_keys = {"vrfCoordinatorMPC": "vrfCoordinatorMPC", "dkg": "dkg", "vrfBeacon": "vrfBeacon"}
     )
 
     return struct(
@@ -181,15 +181,15 @@ def fund_eth_key(plan, eth_key, faucet_url):
     return result.code
 
 def setup_chainlink_node_for_ocr2vrf(plan, node_name, faucet_url):
-    p2p_peer_id = chainlink_pkg.get_p2p_peer_id(plan, node_name)
-    eth_address = chainlink_pkg.get_eth_key(plan, node_name)
+    p2p_peer_id = chainlink_pkg.node_utils.get_p2p_peer_id(plan, node_name)
+    eth_address = chainlink_pkg.node_utils.get_eth_key(plan, node_name)
 
     fund_eth_key(plan, eth_address, faucet_url)
 
     dkg_encr_key = chainlink_pkg.dkg.create_dkg_encr_key(plan, node_name)
     dkg_sign_key = chainlink_pkg.dkg.create_dkg_sign_key(plan, node_name)
-    ocr_key_bundle_id = chainlink_pkg.get_ocr_key_bundle_id(plan, node_name)
-    ocr_keys = chainlink_pkg.get_ocr_key(plan, node_name)
+    ocr_key_bundle_id = chainlink_pkg.node_utils.get_ocr_key_bundle_id(plan, node_name)
+    ocr_keys = chainlink_pkg.node_utils.get_ocr_key(plan, node_name)
 
     return struct(
         p2p_peer_id = p2p_peer_id,
@@ -220,11 +220,11 @@ def setup_simple_vrfv2plus_network(plan, config):
         "chainlink_nodes": chainlink_node_configs 
     })
     
-    vrf_key = chainlink_pkg.create_vrf_keys(plan, "chainlink-node-vrfv2plus-vrf")
+    vrf_key = chainlink_pkg.vrfv2plus.create_vrf_keys(plan, "chainlink-node-vrfv2plus-vrf")
     
     sending_keys = []
     for name in nodes_names:
-        eth_key = chainlink_pkg.get_eth_key(plan, "chainlink-node-vrfv2plus-" + name)
+        eth_key = chainlink_pkg.node_utils.get_eth_key(plan, "chainlink-node-vrfv2plus-" + name)
         fund_eth_key(plan, eth_key, config.network.faucet)
         sending_keys.append(eth_key)
 
